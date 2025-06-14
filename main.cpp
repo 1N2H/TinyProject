@@ -27,45 +27,63 @@ struct ComputerHardware {
 std::vector<ComputerHardware> readData(const std::string& filename) {
     std::vector<ComputerHardware> data;
     std::ifstream file(filename);
-    std::string line;
     
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + filename);
+    }
+    
+    std::string line;
     while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        ComputerHardware item;
-        std::string token;
-        
-        // Vendor name
-        std::getline(iss, item.vendorName, ',');
-        
-        // Model name
-        std::getline(iss, item.modelName, ',');
-        
-        // Numerical values
-        std::getline(iss, token, ',');
-        item.MYCT = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.MMIN = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.MMAX = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.CACH = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.CHMIN = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.CHMAX = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.PRP = std::stoi(token);
-        
-        std::getline(iss, token, ',');
-        item.ERP = std::stoi(token);
-        
-        data.push_back(item);
+        try {
+            std::istringstream iss(line);
+            ComputerHardware item;
+            std::string token;
+            
+            // Vendor name and Model name
+            if (!std::getline(iss, item.vendorName, ',') || 
+                !std::getline(iss, item.modelName, ',')) {
+                throw std::runtime_error("Error reading vendor or model name");
+            }
+            
+            // Numerical values with validation
+            auto readInt = [&iss](const std::string& fieldName) {
+                std::string token;
+                if (!std::getline(iss, token, ',')) {
+                    throw std::runtime_error("Error reading " + fieldName);
+                }
+                int value = std::stoi(token);
+                if (value < 0) {
+                    throw std::runtime_error("Negative value not allowed for " + fieldName);
+                }
+                return value;
+            };
+            
+            item.MYCT = readInt("MYCT");
+            item.MMIN = readInt("MMIN");
+            item.MMAX = readInt("MMAX");
+            if (item.MMAX < item.MMIN) {
+                throw std::runtime_error("MMAX cannot be less than MMIN");
+            }
+            item.CACH = readInt("CACH");
+            item.CHMIN = readInt("CHMIN");
+            item.CHMAX = readInt("CHMAX");
+            if (item.CHMAX < item.CHMIN) {
+                throw std::runtime_error("CHMAX cannot be less than CHMIN");
+            }
+            item.PRP = readInt("PRP");
+            item.ERP = readInt("ERP");
+            
+            data.push_back(item);
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error processing line: " << line << "\n";
+            std::cerr << "Error details: " << e.what() << "\n";
+            continue;  // Skip invalid lines instead of failing completely
+        }
+    }
+    
+    if (data.empty()) {
+        throw std::runtime_error("No valid data read from file");
     }
     
     return data;

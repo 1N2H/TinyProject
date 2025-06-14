@@ -247,9 +247,13 @@ bool Matrix::IsSquare() const { return mNumRows == mNumCols; }
 
 bool Matrix::IsSymmetric() const {
     if (!IsSquare()) return false;
+    
+    const double epsilon = 1e-10;  // Tolerance for floating-point comparison
     for (int i = 0; i < mNumRows; i++) {
-        for (int j = 0; j < i; j++) {
-            if (std::abs(mData[i][j] - mData[j][i]) > 1e-10) return false;
+        for (int j = i + 1; j < mNumCols; j++) {
+            if (std::abs(mData[i][j] - mData[j][i]) > epsilon) {
+                return false;
+            }
         }
     }
     return true;

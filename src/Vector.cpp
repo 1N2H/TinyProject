@@ -6,14 +6,28 @@
 Vector::Vector() : mSize(0), mData(nullptr) {}
 
 Vector::Vector(int size) : mSize(size) {
-    if (size < 0) throw std::invalid_argument("Vector size must be non-negative");
-    mData = new double[size];
-    for (int i = 0; i < size; i++) mData[i] = 0.0;
+    if (size < 0) {
+        throw std::invalid_argument("Vector size must be non-negative");
+    }
+    try {
+        mData = new double[size];
+        for (int i = 0; i < size; i++) {
+            mData[i] = 0.0;
+        }
+    } catch (const std::bad_alloc& e) {
+        throw std::runtime_error("Memory allocation failed: " + std::string(e.what()));
+    }
 }
 
 Vector::Vector(const Vector& other) : mSize(other.mSize) {
-    mData = new double[mSize];
-    for (int i = 0; i < mSize; i++) mData[i] = other.mData[i];
+    try {
+        mData = new double[mSize];
+        for (int i = 0; i < mSize; i++) {
+            mData[i] = other.mData[i];
+        }
+    } catch (const std::bad_alloc& e) {
+        throw std::runtime_error("Memory allocation failed in copy constructor: " + std::string(e.what()));
+    }
 }
 
 Vector::~Vector() {
@@ -46,8 +60,12 @@ Vector& Vector::operator=(const Vector& other) {
     if (this != &other) {
         delete[] mData;
         mSize = other.mSize;
-        mData = new double[mSize];
-        for (int i = 0; i < mSize; i++) mData[i] = other.mData[i];
+        try {
+            mData = new double[mSize];
+            for (int i = 0; i < mSize; i++) mData[i] = other.mData[i];
+        } catch (const std::bad_alloc& e) {
+            throw std::runtime_error("Memory allocation failed in copy assignment: " + std::string(e.what()));
+        }
     }
     return *this;
 }
